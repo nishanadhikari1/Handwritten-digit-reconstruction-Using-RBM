@@ -1,10 +1,3 @@
-"""
-RBM Digit Generator — GENERATE GUI
-Uses 10 separate RBMs (one per digit).
-Selecting digit 7 loads RBM-7 and samples from it.
-
-Run AFTER training:  python rbm_generate.py
-"""
 
 import torch
 import matplotlib
@@ -17,9 +10,8 @@ import gc, os
 torch.set_num_threads(6)
 
 
-# ──────────────────────────────────────────────────
 #  RBM (same as training)
-# ──────────────────────────────────────────────────
+
 class RBM:
     def __init__(self, n_vis=784, n_hid=256):
         self.W  = torch.zeros(n_hid, n_vis)
@@ -60,9 +52,8 @@ class RBM:
         self.bh = d['bh']
 
 
-# ──────────────────────────────────────────────────
 #  Load all 10 RBMs
-# ──────────────────────────────────────────────────
+
 def load_rbms():
     path = 'rbm_model.pth'
     if not os.path.exists(path):
@@ -72,7 +63,7 @@ def load_rbms():
 
     ck = torch.load(path, map_location='cpu')
     if 'rbms' not in ck:
-        print("\n✗  Incompatible model. Delete rbm_model.pth and retrain.\n")
+        print("\n Incompatible model. Delete rbm_model.pth and retrain.\n")
         exit(1)
 
     rbms = {}
@@ -85,9 +76,8 @@ def load_rbms():
     return rbms
 
 
-# ──────────────────────────────────────────────────
 #  GUI
-# ──────────────────────────────────────────────────
+
 def launch_gui(rbms):
     BG    = '#0d0d14'
     PANEL = '#13131e'
@@ -113,7 +103,7 @@ def launch_gui(rbms):
     print("\n  Initial generation (digit 0)…")
     buf[0] = do_gen(0, 2000)
 
-    # ── figure ──────────────────────────────────────
+    # figure
     fig = plt.figure(figsize=(14, 9), facecolor=BG)
     try:
         fig.canvas.manager.set_window_title('RBM Digit Generator')
@@ -151,11 +141,11 @@ def launch_gui(rbms):
              ha='center', color=TEXT, fontsize=14,
              fontweight='bold', fontfamily='monospace')
     fig.text(0.5, 0.946,
-             '10 RBMs  ·  one per digit  ·  CD-1  ·  Gibbs sampling',
+             '10 RBMs  ·  one per digit  ·  CD-1  · ',
              ha='center', color=MUTED, fontsize=9,
              fontfamily='monospace')
 
-    # ── draw helpers ────────────────────────────────
+    # draw helpers
     def draw_grid(s):
         for i, ax in enumerate(axg):
             ax.clear()
@@ -202,7 +192,7 @@ def launch_gui(rbms):
 
     fig.canvas.mpl_connect('button_press_event', on_click)
 
-    # ── "Select digit:" label ────────────────────────
+    # "Select digit:" label
     ax_dlbl.axis('off')
     ax_dlbl.set_facecolor(PANEL)
     ax_dlbl.text(0.5, 0.5, 'Select digit to generate:',
@@ -211,7 +201,7 @@ def launch_gui(rbms):
                  fontfamily='monospace',
                  transform=ax_dlbl.transAxes)
 
-    # ── 10 digit buttons ─────────────────────────────
+    # 10 digit buttons
     g_db = gridspec.GridSpecFromSubplotSpec(
         1, 10, subplot_spec=ax_dbtn.get_subplotspec(), wspace=0.06)
     ax_dbtn.remove()
@@ -251,23 +241,23 @@ def launch_gui(rbms):
 
     hl(0)
 
-    # ── generate button ──────────────────────────────
+    # generate button
     btn_gen = Button(ax_bgen, '⟳   Generate Digit',
                      color='#1e1b4b', hovercolor='#3730a3')
     btn_gen.label.set_color(TEXT)
     btn_gen.label.set_fontfamily('monospace')
     btn_gen.label.set_fontsize(11)
 
-    # ── gibbs slider ─────────────────────────────────
-    ax_gsl.set_facecolor(PANEL)
-    sl_g = Slider(ax_gsl, 'Gibbs', 500, 4000,
-                  valinit=2000, valstep=500, color=ACC)
-    sl_g.label.set_color(TEXT)
-    sl_g.valtext.set_color(ACC2)
+    # #  gibbs slider 
+    # ax_gsl.set_facecolor(PANEL)
+    # sl_g = Slider(ax_gsl, 'Gibbs', 500, 4000,
+    #               valinit=2000, valstep=500, color=ACC)
+    # sl_g.label.set_color(TEXT)
+    # sl_g.valtext.set_color(ACC2)
 
     def on_gen(ev):
         d     = state['digit']
-        steps = int(sl_g.val)
+        steps = 2000 #set to 2000
         set_status(f'⏳  Sampling from RBM-{d}…  ({steps} steps)', YLW)
         fig.canvas.draw()
         fig.canvas.flush_events()
@@ -275,12 +265,12 @@ def launch_gui(rbms):
         draw_grid(buf[0])
         draw_detail(state['sel'])
         set_status(
-            f'✓  9 samples of digit  {d}  —  {steps} Gibbs steps', GRN)
+            f' 9 samples of digit  {d}  —  {steps} Gibbs steps', GRN)
         fig.canvas.draw_idle()
 
     btn_gen.on_clicked(on_gen)
 
-    # ── save button ───────────────────────────────────
+    # save button 
     btn_sv = Button(ax_bsv, '⤓   Save Grid PNG',
                     color='#14532d', hovercolor='#166534')
     btn_sv.label.set_color(TEXT)
@@ -309,24 +299,24 @@ def launch_gui(rbms):
 
     btn_sv.on_clicked(on_save)
 
-    # ── noise slider ──────────────────────────────────
-    ax_nsl.set_facecolor(PANEL)
-    sl_n = Slider(ax_nsl, 'Noise', 0.1, 0.9,
-                  valinit=0.4, valstep=0.1, color='#0891b2')
-    sl_n.label.set_color(TEXT)
-    sl_n.valtext.set_color(ACC2)
+    # # ── noise slider 
+    # ax_nsl.set_facecolor(PANEL)
+    # sl_n = Slider(ax_nsl, 'Noise', 0.1, 0.9,
+    #               valinit=0.4, valstep=0.1, color='#0891b2')
+    # sl_n.label.set_color(TEXT)
+    # sl_n.valtext.set_color(ACC2)
 
-    # ── denoise button ────────────────────────────────
-    btn_dn = Button(ax_bdn, '⟲   Denoise Selected',
-                    color='#1e3a5f', hovercolor='#1e4d7b')
-    btn_dn.label.set_color(TEXT)
-    btn_dn.label.set_fontfamily('monospace')
-    btn_dn.label.set_fontsize(10)
+    # ── denoise button
+    # btn_dn = Button(ax_bdn, '  Denoise Selected',
+    #                 color='#1e3a5f', hovercolor='#1e4d7b')
+    # btn_dn.label.set_color(TEXT)
+    # btn_dn.label.set_fontfamily('monospace')
+    # btn_dn.label.set_fontsize(10)
 
     def on_dn(ev):
         idx   = state['sel']
         d     = state['digit']
-        noise = sl_n.val
+        noise = 0
         clean = buf[0][idx]
         noisy = torch.bernoulli(
             (clean + noise * torch.rand_like(clean)).clamp(0, 1))
@@ -349,7 +339,7 @@ def launch_gui(rbms):
         del noisy, recon, combined
         gc.collect()
 
-    btn_dn.on_clicked(on_dn)
+    # btn_dn.on_clicked(on_dn)
 
     # style all control axes
     for ax in [ax_st, ax_dlbl, ax_bgen, ax_gsl,
@@ -358,7 +348,7 @@ def launch_gui(rbms):
         for sp in ax.spines.values():
             sp.set_edgecolor('#1e293b')
 
-    # ── initial render ───────────────────────────────
+    # initial render
     draw_grid(buf[0])
     draw_detail(0)
     set_status('✓  Ready — pick a digit and click  Generate ⟳', GRN)
@@ -367,15 +357,15 @@ def launch_gui(rbms):
     gc.collect()
 
 
-# ──────────────────────────────────────────────────
+
 if __name__ == '__main__':
-    print("\n╔══════════════════════════════════════════╗")
-    print("║  RBM Digit Generator — Generate GUI      ║")
-    print("╚══════════════════════════════════════════╝\n")
+  
+    print("RBM Digit Generator — Generate GUI")
+   
     rbms = load_rbms()
-    print("\nHow to use:")
-    print("  1. Click a digit button [0]–[9]")
-    print("  2. Click  [Generate Digit]")
-    print("  3. All 9 grid cells = samples of that digit")
-    print("  4. Click any cell to zoom in\n")
+ 
+    # print("  1. Click a digit button [0]–[9]")
+    # print("  2. Click  [Generate Digit]")
+    # print("  3. All 9 grid cells = samples of that digit")
+    # print("  4. Click any cell to zoom in\n")
     launch_gui(rbms)

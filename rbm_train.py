@@ -1,12 +1,3 @@
-"""
-RBM Digit Generator — TRAIN
-Approach: Train a standard RBM per digit class.
-Each digit gets its OWN RBM trained only on that digit's images.
-Generation = sample from that digit's RBM → guaranteed to look like that digit.
-
-Run: python rbm_train.py
-ETA: ~4-6 min on i7
-"""
 
 import torch
 import torchvision
@@ -16,19 +7,19 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os, gc
 
+
 torch.set_num_threads(6)
 torch.manual_seed(42)
 
 
-# ──────────────────────────────────────────────────
-#  One small RBM  (trained on ONE digit class only)
-# ──────────────────────────────────────────────────
+
+#  One trained on ONE digit class only
 class RBM:
     def __init__(self, n_vis=784, n_hid=256):
         self.W  = torch.randn(n_hid, n_vis) * 0.01
         self.bv = torch.zeros(n_vis)
         self.bh = torch.zeros(n_hid)
-        # momentum
+
         self.vW  = torch.zeros_like(self.W)
         self.vbv = torch.zeros_like(self.bv)
         self.vbh = torch.zeros_like(self.bh)
@@ -65,7 +56,6 @@ class RBM:
 
     @torch.no_grad()
     def sample(self, n=9, steps=2000):
-        """Gibbs sample from this RBM"""
         v = torch.bernoulli(torch.rand(n, len(self.bv)) * 0.1)
         for _ in range(steps):
             _, h = self.h_given_v(v)
@@ -84,17 +74,13 @@ class RBM:
         self.bh = d['bh']
 
 
-# ──────────────────────────────────────────────────
-#  Train 10 separate RBMs (one per digit)
-# ──────────────────────────────────────────────────
-def train():
-    print("\n╔════════════════════════════════════════════════╗")
-    print("║  RBM Digit Generator — Training               ║")
-    print("║  Strategy: 10 separate RBMs, one per digit    ║")
-    print("║  Each RBM sees ONLY its digit → clean output  ║")
-    print("╚════════════════════════════════════════════════╝\n")
 
-    # Binary MNIST
+#  Train 10 separate RBMs (one per digit)
+def train():
+    print("RBM Digit Generator — Training            ")
+   
+
+    #  MNIST
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Lambda(lambda x: (x > 0.5).float().view(-1))
@@ -112,6 +98,7 @@ def train():
     print(f"  Samples per digit: ~{len(digit_data[0])}\n")
 
     rbms = {}
+    all_losses = {}
     EPOCHS = 40
     LR     = 0.005
     BATCH  = 128
@@ -141,14 +128,66 @@ def train():
         final_loss = losses[-1]
         print(f"  Digit {digit} — final loss: {final_loss:.5f}")
         rbms[digit] = rbm.state_dict()
+        all_losses[digit] = losses 
         del rbm, data
         gc.collect()
 
     # Save all 10 RBMs
     torch.save({'rbms': rbms, 'n_hid': 256, 'n_vis': 784}, 'rbm_model.pth')
+    torch.save({'rbms': rbms, 'n_hid': 256, 'n_vis': 784}, 'rbm_model.pth')
+
+   #metrices
+    COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c',
+              '#3498db','#9b59b6','#e91e63','#00bcd4','#8bc34a']
+
+    # Graph 1 — all 10 digits on one plot
+    fig, ax = plt.subplots(figsize=(10, 5), facecolor='#0d0d0d')
+    ax.set_facecolor('#111118')
+    for digit in range(10):
+        ax.plot(range(1, EPOCHS + 1), all_losses[digit],
+                color=COLORS[digit], linewidth=1.8, label=f'Digit {digit}')
+    ax.set_xlabel('Epoch', color='#aaaaaa', fontsize=11)
+    ax.set_ylabel('Reconstruction Loss (MSE)', color='#aaaaaa', fontsize=11)
+    ax.set_title('RBM Training Loss — All 10 Digit Classes',
+                 color='white', fontsize=13, fontweight='bold')
+    ax.tick_params(colors='#aaaaaa')
+    ax.legend(loc='upper right', fontsize=8, facecolor='#1a1a2e',
+              edgecolor='#333', labelcolor='white', ncol=2)
+    for sp in ax.spines.values():
+        sp.set_edgecolor('#333333')
+    plt.tight_layout()
+    plt.savefig('training_curve.png', dpi=130,
+                bbox_inches='tight', facecolor='#0d0d0d')
+    plt.close()
+    print("  ✓ training_curve.png saved")
+
+    # Graph 2 — individual subplot per digit (2 rows x 5 cols)
+    fig, axes = plt.subplots(2, 5, figsize=(14, 5), facecolor='#0d0d0d')
+    for digit, ax in enumerate(axes.flat):
+        ax.set_facecolor('#111118')
+        ax.plot(range(1, EPOCHS + 1), all_losses[digit],
+                color=COLORS[digit], linewidth=2)
+        ax.fill_between(range(1, EPOCHS + 1), all_losses[digit],
+                        alpha=0.15, color=COLORS[digit])
+        ax.set_title(f'Digit {digit}', color='white',
+                     fontsize=10, fontweight='bold')
+        ax.set_xlabel('Epoch', color='#aaa', fontsize=8)
+        ax.set_ylabel('Loss',  color='#aaa', fontsize=8)
+        ax.tick_params(colors='#aaa', labelsize=7)
+        for sp in ax.spines.values():
+            sp.set_edgecolor('#333333')
+    plt.suptitle('Per-Digit Training Loss Curves',
+                 color='white', fontsize=12, fontweight='bold')
+    fig.patch.set_facecolor('#0d0d0d')
+    plt.tight_layout()
+    plt.savefig('training_curve_per_digit.png', dpi=130,
+                bbox_inches='tight', facecolor='#0d0d0d')
+    plt.close()
+    print("  ✓ training_curve_per_digit.png saved")
+
     print("\n  ✓ rbm_model.pth saved  (10 RBMs inside)\n")
 
-    # ── Verification: generate one per digit ──────────
+    #Verification: generate one per digit
     print("  Generating verification grid…", end='', flush=True)
 
     fig, axes = plt.subplots(3, 10, figsize=(16, 5), facecolor='#0d0d0d')
