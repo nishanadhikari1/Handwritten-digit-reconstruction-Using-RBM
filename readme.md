@@ -174,15 +174,10 @@ This launches an **interactive GUI** where you can:
 ---
 
 ## 👨‍💻 Author
-
-* **Sudhan Bhattarai** (079BCT082)
-
-## 🤝 Co-authors
-
 * **Nishan Adhikari** (079BCT050)
 * **Prabesh Dhakal** (079BCT057)
+* **Sudhan Bhattarai** (079BCT082)
 
----
 
 ## 📜 License
 
